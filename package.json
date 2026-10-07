@@ -1,0 +1,9 @@
+{
+  "name": "signfactory-zakazky",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@netlify/database": "latest",
+    "postgres": "^3.4.0"
+  }
+}
