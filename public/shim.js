@@ -41,6 +41,7 @@ const doc=path=>({
 const col=path=>({
  doc:id=>doc(path+'/'+(id||rid())),
  add:async d=>{const id=rid();await wrote(call({op:'set',path:path+'/'+id,data:d}));return doc(path+'/'+id)},
+ get:async()=>{const raw=(await call({op:'list',path})).docs;return{docs:raw.map(x=>snap(path+'/'+x.id,x.data)),size:raw.length}},
  onSnapshot:(cb,err)=>poll(async()=>(await call({op:'list',path})).docs,raw=>({docs:raw.map(x=>snap(path+'/'+x.id,x.data)),size:raw.length}),cb,err)});
 const db={doc,collection:col};
 const assets={upload:async f=>{

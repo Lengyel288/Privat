@@ -74,6 +74,7 @@ header{gap:8px}header>.row{flex:1 1 100%!important}header>.row button{flex:1 1 a
 .dbar{height:10px;border-radius:99px;background:var(--bd);overflow:hidden}.dbar i{display:block;height:100%;border-radius:99px}
 .mcols{display:flex;align-items:flex-end;gap:8px;height:170px}.mcol{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;font-size:11px;color:var(--mu)}
 .mcol i{width:100%;border-radius:6px 6px 0 0;background:var(--ac);min-height:2px;display:block;margin:2px 0}
+.ls{display:flex;align-items:center;gap:2px;min-width:150px}.del{opacity:.55}.del:hover{opacity:1;color:var(--ac)}
 .hide{display:none!important}.msg{font-size:13px;color:var(--mu);margin-top:8px}
 @media print{body{background:#fff;color:#000}#brand .bt,#brand .bt b{color:#000}header,.noprint,button{display:none!important}.card{border:0;padding:0}input,select,textarea{border:0!important;padding:2px!important;background:none!important;color:#000!important;appearance:none}}
 </style></head><body><div class="wrap">
@@ -166,7 +167,7 @@ function renderList(){
  const tn=l.reduce((t,o)=>t+(o.net||0),0),tg=l.reduce((t,o)=>t+(o.gross||0),0);
  $('#sum').innerHTML=`Vo výbere: <b>${l.length}</b> zákaziek · bez DPH <b>${eur(tn)}</b> · s DPH <b>${eur(tg)}</b>`;
  if(vmode!=='list'){renderAlt(l);return}
- $('#items').innerHTML=l.length?l.map(o=>`<div class="list-item" data-n="${esc(o.number)}"><span class="num">${esc(o.number)}</span><div class="lc"><div>${esc(o.client)||'—'}</div><div class="mu">${esc(o.title)}</div></div><div class="ld mu${overdue(o)?' late':''}">${o.due?'do '+esc(o.due.split('-').reverse().join('.')):''}</div><div class="lp"><b>${eur(o.gross||0)}</b></div><div class="ls"><select class="stsel s-${o.status||'vyroba'}" data-n="${esc(o.number)}">${ST.map(([k,t])=>`<option value="${k}"${k===(o.status||'vyroba')?' selected':''}>${t}</option>`).join('')}</select></div></div>`).join(''):'<div class="mu" style="padding:14px">Zatiaľ žiadne zákazky.</div>';
+ $('#items').innerHTML=l.length?l.map(o=>`<div class="list-item" data-n="${esc(o.number)}"><span class="num">${esc(o.number)}</span><div class="lc"><div>${esc(o.client)||'—'}</div><div class="mu">${esc(o.title)}</div></div><div class="ld mu${overdue(o)?' late':''}">${o.due?'do '+esc(o.due.split('-').reverse().join('.')):''}</div><div class="lp"><b>${eur(o.gross||0)}</b></div><div class="ls"><select class="stsel s-${o.status||'vyroba'}" data-n="${esc(o.number)}">${ST.map(([k,t])=>`<option value="${k}"${k===(o.status||'vyroba')?' selected':''}>${t}</option>`).join('')}</select><button class="g del" data-del="${esc(o.number)}" title="Vymazať zákazku" aria-label="Vymazať zákazku">🗑</button></div></div>`).join(''):'<div class="mu" style="padding:14px">Zatiaľ žiadne zákazky.</div>';
 }
 const FLOW=['cp','vyroba','odovzdane','ukoncene'];
 function card(o){const st=o.status||'vyroba',i=FLOW.indexOf(st),n=esc(o.number),prev=i>0?FLOW[i-1]:st==='zamietnuta'?'cp':'',next=i>=0&&i<3?FLOW[i+1]:'';
@@ -203,6 +204,12 @@ async function renderEv(){const ids=[...new Set(evs.map(e=>e.by).filter(Boolean)
  $('#evlist').innerHTML=evs.map(e=>{const who=esc((ps[e.by]&&ps[e.by].name)||'Člen tímu'),t=new Date(e.at).toLocaleString('sk-SK',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'});
   const b=e.type==='file'?`📎 <a href="/_blob/${esc(e.asset)}" target="_blank" rel="noopener">${esc(e.name)}</a>${/^image\//.test(e.ct||'')?`<div><img src="/_blob/${esc(e.asset)}" alt="" style="max-height:90px;border-radius:8px;margin-top:4px"></div>`:''}`:e.type==='status'?`<span class="mu">Stav: ${esc(e.text)}</span>`:esc(e.text).replace(/\n/g,'<br>');
   return `<div class="ev"><div class="mu" style="font-size:12px">${who} · ${t}</div>${b}</div>`}).join('')||'<div class="mu">Zatiaľ nič.</div>'}
+async function delOrder(n){const o=orders.find(x=>x.number===n);if(!o)return;
+ if(!await ask('Vymazať zákazku '+n+' ('+(o.client||'bez klienta')+(o.title?' – '+o.title:'')+')?\nAk ju chceš len skryť, použi Archivovať.',false,'Pokračovať','Zrušiť'))return;
+ if(!await ask('NAOZAJ vymazať zákazku '+n+'? Nedá sa to vrátiť späť a zmizne aj jej história a poznámky.',false,'Áno, vymazať','Nie, ponechať'))return;
+ try{const c=await db.doc('settings/counter').get();await db.doc('settings/counter').set({last:Math.max(c.exists?(c.data().last||0):0,parseInt(n,10)||0)});
+  try{const s=await db.doc('orders/'+n).collection('events').get();for(const d of s.docs)await db.doc('orders/'+n+'/events/'+d.id).delete()}catch(x){}
+  await db.doc('orders/'+n).delete();status('Zákazka '+n+' vymazaná');setTimeout(()=>status(''),3000)}catch(x){note('Vymazanie zlyhalo: '+(x.message||x.code))}}
 function leave(){if(unsubEv){unsubEv();unsubEv=null}show('list')}
 function fillClients(){$('#clist').innerHTML=clients.map(c=>`<option value="${esc(c.name)}"></option>`).join('')}
 function blank(){return{number:null,date:new Date().toISOString().slice(0,10),client:'',ids:'',title:'',due:'',vat:23,status:'vyroba',note:'',lines:[{d:'',q:1,u:'ks',p:0}]}}
@@ -234,7 +241,7 @@ async function save(){
  try{
   if(cur.number){await db.doc('orders/'+cur.number).set(cur)}
   else{
-   let n=orders.reduce((m,o)=>Math.max(m,parseInt(o.number,10)||0),0)+1;
+   const cs=await db.doc('settings/counter').get();let n=Math.max(orders.reduce((m,o)=>Math.max(m,parseInt(o.number,10)||0),0),cs.exists?(cs.data().last||0):0)+1;
    for(let k=0;k<10;k++,n++){
     const ref=db.doc('orders/'+pad(n)),s=await ref.get();if(s.exists)continue;
     if(ref.create){if(await ref.create({...cur,number:pad(n)})){cur.number=pad(n);break}continue}
@@ -300,7 +307,7 @@ $('#evfile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!
  try{const r=await assets.upload(f);await logEv(cur.number,{type:'file',name:f.name,asset:r.id,ct:r.contentType||f.type});$('#evmsg').textContent=''}catch(x){$('#evmsg').textContent='Nahratie zlyhalo ('+(x.code||x.message)+'). Maximálna veľkosť je 4 MB.'}};$('#save').onclick=save;$('#print').onclick=()=>window.print();
 $('#q').oninput=renderList;$('#sort').onchange=e=>{sortBy=e.target.value;renderList()};
 $('#items').onchange=async e=>{const t=e.target.closest('.stsel');if(!t)return;if(!await setStatus(t.dataset.n,t.value))renderList()};
-$('#items').onclick=async e=>{if(e.target.closest('select'))return;const go=e.target.closest('[data-go]');if(go){filt=go.dataset.go;setView('list');return}const mv=e.target.closest('[data-to]');if(mv){await setStatus(mv.dataset.n,mv.dataset.to);return}const r=e.target.closest('[data-n]');if(r)open(orders.find(o=>o.number===r.dataset.n))};
+$('#items').onclick=async e=>{if(e.target.closest('select'))return;const dl=e.target.closest('[data-del]');if(dl){await delOrder(dl.dataset.del);return}const go=e.target.closest('[data-go]');if(go){filt=go.dataset.go;setView('list');return}const mv=e.target.closest('[data-to]');if(mv){await setStatus(mv.dataset.n,mv.dataset.to);return}const r=e.target.closest('[data-n]');if(r)open(orders.find(o=>o.number===r.dataset.n))};
 const fillClient=c=>{$('#cname').value=c.name;$('#cids').value=[c.ico&&'IČO '+c.ico,c.dic&&'DIČ '+c.dic,c.icdph&&'IČ DPH '+c.icdph].filter(Boolean).join(' · ');
  $('#caddr').value=[c.addr,[c.zip,c.city].filter(Boolean).join(' '),c.country&&c.country!=='Slovensko'?c.country:''].filter(Boolean).join(', ');dirty=true};
 $('#csel').oninput=e=>{const c=clients.find(x=>x.name===e.target.value);if(c)fillClient(c)};
