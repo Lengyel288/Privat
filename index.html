@@ -80,7 +80,7 @@ header{gap:8px}header>.row{flex:1 1 100%!important}header>.row button{flex:1 1 a
 #calc{position:fixed;left:14px;bottom:calc(80px + env(safe-area-inset-bottom,0px));z-index:20;width:min(400px,calc(100vw - 28px));max-height:calc(100vh - 110px);overflow:auto;box-shadow:0 8px 30px rgba(0,0,0,.28)}
 .ck{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.ck button{padding:14px 0;font-size:22px}
 .cdisp{font-size:32px;text-align:right;min-height:36px;word-break:break-all}.cres{text-align:right;color:var(--mu);min-height:22px;margin-bottom:6px}
-@media (min-width:1280px){.wrap{max-width:1360px;padding-right:400px}#calc{display:block!important;position:fixed;top:84px;bottom:auto;left:auto;right:calc(50% - 680px + 16px);width:360px;max-height:calc(100vh - 100px)}#cbtn,#cx{display:none!important}}
+@media (min-width:1280px){.wrap{max-width:1360px;padding-left:400px}#calc{display:block!important;position:fixed;top:84px;bottom:auto;right:auto;left:max(16px,calc(50% - 680px + 16px));width:360px;max-height:calc(100vh - 100px)}#cbtn,#cx{display:none!important}}
 @media print{#cbtn,#calc{display:none!important}}
 .hide{display:none!important}.msg{font-size:13px;color:var(--mu);margin-top:8px}
 @media print{body{background:#fff;color:#000}#brand .bt,#brand .bt b{color:#000}header,.noprint,button{display:none!important}.card{border:0;padding:0}input,select,textarea{border:0!important;padding:2px!important;background:none!important;color:#000!important;appearance:none}}
